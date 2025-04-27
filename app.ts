@@ -11,15 +11,19 @@ import {
 import { HttpError } from "./src/error/HttpError";
 import { HttpStatus } from "./src/constants/HttpStatus";
 import { GetOneUserService } from "./src/service/user/GetOneUserService";
-import { IUser } from "./src/types/IUser";
+import { CreateUserService } from "./src/service/user/CreateUserService";
 
 const app = express();
 
 const getOneUserService = new GetOneUserService();
+const createUserService = new CreateUserService();
 
 app.listen(Number(process.env.PORT), () => {
   console.log(`Server listening on port ${process.env.PORT}`);
 });
+
+// このミドルウェアを使わないとボディがパースされない
+app.use(express.json());
 
 // ヘルスチェック
 app.get("/health", (req, res) => {
@@ -56,6 +60,23 @@ AppDataSource.initialize()
                   `指定したid(id : ${userId})のユーザーが見つかりませんでした`
                 )
               );
+      } catch (err) {
+        next(err);
+      }
+    });
+
+    // ユーザー登録API
+    app.post("/user", async (req, res, next) => {
+      try {
+        // バリデーション確認
+        const validationErrors = await createUserService.validate(req.body);
+        if (validationErrors.length > 0) throwValidationError(validationErrors); // バリデーションエラーをthrow！
+
+        // 本処理
+        const result = await createUserService.createUser(req.body);
+
+        // レスポンスを返す
+        res.status(HttpStatus.OK.code).json(result);
       } catch (err) {
         next(err);
       }
