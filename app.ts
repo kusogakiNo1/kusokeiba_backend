@@ -3,6 +3,7 @@ dotenv.config();
 console.log("▶ app.ts started");
 
 import express from "express";
+import cors from "cors";
 import { AppDataSource } from "./src/AppDataSource";
 import {
   throwValidationError,
@@ -14,6 +15,15 @@ import { GetOneUserService } from "./src/service/user/GetOneUserService";
 import { CreateUserService } from "./src/service/user/CreateUserService";
 
 const app = express();
+
+// CORS周りの設定
+const corsOptions = {
+  origin: "http://localhost:3000", // 許可するオリジン
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE", // 許可するHTTPメソッド
+  credentials: true, // Cookieなどの認証情報を許可するか
+  allowedHeaders: "Content-Type,Authorization", // 許可するリクエストヘッダー
+};
+app.use(cors(corsOptions));
 
 const getOneUserService = new GetOneUserService();
 const createUserService = new CreateUserService();

@@ -18,7 +18,7 @@ export class GetOneUserService {
     if (result) {
       const user: IUser = {
         id: result.id,
-        username: result.username,
+        name: result.name,
         email: result.email,
         age: result.age,
         deletedFlag: result.deletedFlag,

@@ -12,7 +12,7 @@ export class User {
   id!: number;
 
   @Column({ length: 20 })
-  username!: string;
+  name!: string;
 
   @Column()
   email!: string;

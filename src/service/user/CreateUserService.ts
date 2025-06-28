@@ -6,7 +6,7 @@ import { User } from "../../entity/User";
 import { IUser } from "../../types/IUser";
 
 type CreateUserRequest = {
-  username: string;
+  name: string;
   email: string;
   password: string;
   age: number;
@@ -26,7 +26,7 @@ export class CreateUserService {
 
     // トランザクション開始
     await AppDataSource.transaction(async (manager) => {
-      user.username = userData.username;
+      user.name = userData.name;
       user.email = userData.email;
       user.password = userData.password;
       user.age = userData.age;
@@ -41,7 +41,7 @@ export class CreateUserService {
 
     const createdUserData: IUser = {
       id: user.id,
-      username: userData.username,
+      name: userData.name,
       email: userData.email,
       age: userData.age,
       deletedFlag: user.deletedFlag, // 作成したばかりなので確定でfalse
