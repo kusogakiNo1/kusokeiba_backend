@@ -55,7 +55,7 @@ services:
       MYSQL_PASSWORD: kuso950
       TZ: 'Asia/Tokyo'
     volumes:
-      # - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
       - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
       - ./docker/mysql/data:/var/lib/mysql
     privileged: true

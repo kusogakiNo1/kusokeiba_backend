@@ -19,7 +19,7 @@ CREATE TABLE users (
 
 INSERT INTO users (name, email, password, age)
 VALUES
-('kusogakiRoot', 'verykusogackie12345@gmail.com', 'shitchildren950950', 25),
+('kusogakiRoot', 'verykusogackie12345@gmail.com', 'nomorekusogaki', 25),
 ('numasaka', 'numa4545@gmail.com', 'numany', 25),
 ('ezaki', 'princeZeacky@zeus.chu', '0725', 25);
 
