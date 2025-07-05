@@ -78,12 +78,12 @@ describe("ユーザー情報取得(1件)API テスト", () => {
       });
     });
     test("存在しないユーザーidを指定し、404が返ってくることの確認", async () => {
-      const response = await request(app).get("/user/1213");
+      const response = await request(app).get("/user/9999999999");
 
       expect(response.status).toStrictEqual(HttpStatus.NOT_FOUND.code);
       expect(response.body).toEqual({
         message: HttpStatus.NOT_FOUND.message,
-        detail: "指定したid(id : 1213)のユーザーが見つかりませんでした",
+        detail: "指定したid(id : 9999999999)のユーザーが見つかりませんでした",
       });
     });
   });
