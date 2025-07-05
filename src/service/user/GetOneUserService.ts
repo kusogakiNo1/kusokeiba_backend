@@ -8,7 +8,7 @@ import { IUser } from "../../types/IUser";
 export class GetOneUserService {
   private userRepository = AppDataSource.getRepository(User);
 
-  async validate(param: { id: string }): Promise<any> {
+  async validate(param): Promise<any> {
     const validation = plainToInstance(GetOneUserValidation, param);
     return validate(validation);
   }

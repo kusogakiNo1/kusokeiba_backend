@@ -1,5 +1,6 @@
 import { IsDefined, IsNotEmpty, IsNumber } from "class-validator";
 import { Transform } from "class-transformer";
+import { ValidationMsg } from "../../constants/ValidationMessages";
 
 // ユーザー情報取得（1件）APIのバリデーションを定義
 
@@ -11,8 +12,8 @@ export class GetOneUserValidation {
       ? Number(value)
       : value
   )
-  @IsDefined({ message: "idがundefinedです。idを指定してください。" })
-  @IsNotEmpty({ message: "idがnullもしくは空白です。idを指定してください。" })
-  @IsNumber({}, { message: "idは数字で指定してください" })
+  @IsDefined({ message: ValidationMsg.id.unspecified })
+  @IsNotEmpty({ message: ValidationMsg.id.unspecified })
+  @IsNumber({}, { message: ValidationMsg.id.notInt })
   id!: number;
 }
