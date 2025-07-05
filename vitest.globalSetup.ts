@@ -1,4 +1,10 @@
 // vitestのテスト（全体）実行前後に実施したいことを記載するファイル
+// 接続先DBをテスト用DBに設定
+console.log("接続先をテスト用DBに変更");
+process.env.DB_PORT = "3307";
+process.env.DB_NAME = "kusokeiba-test";
+console.log(`Vitest Setup: Using database "${process.env.DB_NAME}"`);
+
 import { AppDataSource } from "./src/AppDataSource";
 
 // setup関数: 全てのテストが実行される前に一度だけ実行

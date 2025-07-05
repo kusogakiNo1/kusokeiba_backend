@@ -4,22 +4,34 @@ import { app } from "../../app";
 import { AppDataSource } from "../../src/AppDataSource";
 import { ValidationMsg } from "../../src/constants/ValidationMessages";
 import { HttpStatus } from "../../src/constants/HttpStatus";
-import { CreateUserService } from "../../src/service/user/CreateUserService";
 import { User } from "../../src/entity/User";
 
-const createUserService = new CreateUserService();
+const alreadyRegisteredUser = {
+  name: "登録 済み太郎",
+  email: "alreadyRegisterd@test.com",
+  password: "password123",
+  age: 20,
+};
 
-describe("ユーザー登録API テスト", () => {
+const createdUserIds: number[] = [];
+
+describe("ユーザー登録API テスト【👍：正常系 🆖：異常系】", () => {
   beforeAll(async () => {
     if (!AppDataSource.isInitialized) {
+      // DB接続
       await AppDataSource.initialize().catch((err) => {
         console.error("DB接続失敗:", err);
       });
+      // 確認に用いるデータを登録
+      AppDataSource.getRepository(User).save(alreadyRegisteredUser);
     }
   });
 
   afterAll(async () => {
+    // 登録したデータを削除
+    await AppDataSource.getRepository(User).delete({});
     if (AppDataSource.isInitialized) {
+      // DB切断
       await AppDataSource.destroy().catch((err) => {
         console.error("DB切断失敗:", err);
       });
@@ -27,8 +39,47 @@ describe("ユーザー登録API テスト", () => {
   });
 
   describe("バリデーションテスト", () => {
-    describe("name", () => {
-      test("nameが未定義の場合、エラーが返されること", async () => {
+    describe("ユーザー名（name）", () => {
+      test("👍 nameが1文字の場合、200が返ってくること", async () => {
+        const requestBody = {
+          name: "a",
+          email: "test1@example.com",
+          password: "password123",
+          age: 20,
+        };
+
+        const response = await request(app).post("/user").send(requestBody);
+
+        expect(response.status).toStrictEqual(200);
+        expect(response.body.data).toMatchObject({
+          name: requestBody.name,
+          email: requestBody.email,
+          age: requestBody.age,
+        });
+        // 登録したデータを削除
+        await AppDataSource.getRepository(User).delete({
+          id: response.body.data.id,
+        });
+      });
+
+      test("👍 nameが20文字の場合、200が返ってくること", async () => {
+        const requestBody = {
+          name: "a".repeat(20),
+          email: "test2@example.com",
+          password: "password123",
+          age: 20,
+        };
+
+        const response = await request(app).post("/user").send(requestBody);
+
+        expect(response.status).toStrictEqual(200);
+        expect(response.body.data).toMatchObject({
+          name: requestBody.name,
+          email: requestBody.email,
+          age: requestBody.age,
+        });
+      });
+      test("🆖 nameが未定義の場合、400エラーが返ってくること", async () => {
         const newUser = {
           email: "test@example.com",
           password: "password123",
@@ -43,7 +94,7 @@ describe("ユーザー登録API テスト", () => {
         );
       });
 
-      test("nameが空文字の場合、エラーが返されること", async () => {
+      test("🆖 nameが空文字の場合、400エラーが返ってくること", async () => {
         const newUser = {
           name: "",
           email: "test@example.com",
@@ -59,7 +110,7 @@ describe("ユーザー登録API テスト", () => {
         );
       });
 
-      test("nameが21文字以上の場合、エラーが返されること", async () => {
+      test("🆖 nameが21文字以上の場合、400エラーが返ってくること", async () => {
         const newUser = {
           name: "a".repeat(21),
           email: "test@example.com",
@@ -76,8 +127,28 @@ describe("ユーザー登録API テスト", () => {
       });
     });
 
-    describe("email", () => {
-      test("emailが未定義の場合、エラーが返されること", async () => {
+    describe("メールアドレス（email）", () => {
+      test("👍 RFCに準拠した一般的な形式のemailの場合、200が返ってくること", async () => {
+        const requestBody = {
+          name: "testuser",
+          email: "test3@example.com",
+          password: "password123",
+          age: 20,
+        };
+        const response = await request(app).post("/user").send(requestBody);
+
+        expect(response.status).toStrictEqual(200);
+        expect(response.body.data).toMatchObject({
+          name: requestBody.name,
+          email: requestBody.email,
+          age: requestBody.age,
+        });
+        // 登録したデータを削除
+        await AppDataSource.getRepository(User).delete({
+          id: response.body.data.id,
+        });
+      });
+      test("🆖 emailが未定義の場合、400エラーが返ってくること", async () => {
         const newUser = {
           name: "testuser",
           password: "password123",
@@ -90,7 +161,7 @@ describe("ユーザー登録API テスト", () => {
         expect(response.body.detail).toContain(ValidationMsg.email.unspecified);
       });
 
-      test("emailが空文字の場合、エラーが返されること", async () => {
+      test("🆖 emailが空文字の場合、400エラーが返ってくること", async () => {
         const newUser = {
           name: "testuser",
           email: "",
@@ -104,7 +175,7 @@ describe("ユーザー登録API テスト", () => {
         expect(response.body.detail).toContain(ValidationMsg.email.unspecified);
       });
 
-      test("emailが256文字以上の場合、エラーが返されること", async () => {
+      test("🆖 emailが256文字以上の場合、400エラーが返ってくること", async () => {
         const newUser = {
           name: "testuser",
           email: "a".repeat(247) + "@test.com",
@@ -120,7 +191,7 @@ describe("ユーザー登録API テスト", () => {
         );
       });
 
-      test("emailの形式が不正な場合、エラーが返されること", async () => {
+      test("🆖 emailの形式が不正な場合、400エラーが返ってくること", async () => {
         const newUser = {
           name: "testuser",
           email: "invalid-email",
@@ -136,10 +207,10 @@ describe("ユーザー登録API テスト", () => {
         );
       });
 
-      test("emailが既に登録済みの場合、エラーが返されること", async () => {
+      test("🆖 emailが既に登録済みの場合、400エラーが返ってくること", async () => {
         const newUser = {
-          name: "testuser",
-          email: "verykusogackie12345@gmail.com",
+          name: "登録 済み太郎",
+          email: "alreadyRegisterd@test.com",
           password: "password123",
           age: 20,
         };
@@ -151,8 +222,52 @@ describe("ユーザー登録API テスト", () => {
       });
     });
 
-    describe("password", () => {
-      test("passwordが未定義の場合、エラーが返されること", async () => {
+    describe("パスワード（password）", () => {
+      test("👍 passwordが8文字の英数字混合の場合、200が返ってくること", async () => {
+        const requestBody = {
+          name: "testuser",
+          email: "test4@example.com",
+          password: "aB123456",
+          age: 20,
+        };
+
+        const response = await request(app).post("/user").send(requestBody);
+
+        expect(response.status).toStrictEqual(200);
+        expect(response.body.data).toMatchObject({
+          name: requestBody.name,
+          email: requestBody.email,
+          age: requestBody.age,
+        });
+        // 登録したデータを削除
+        await AppDataSource.getRepository(User).delete({
+          id: response.body.data.id,
+        });
+      });
+
+      test("👍 passwordが255文字の英数字混合の場合、200が返ってくること", async () => {
+        const requestBody = {
+          name: "testuser",
+          email: "test5@example.com",
+          password: "a".repeat(254) + "1",
+          age: 20,
+        };
+
+        const response = await request(app).post("/user").send(requestBody);
+
+        expect(response.status).toStrictEqual(200);
+        expect(response.body.data).toMatchObject({
+          name: requestBody.name,
+          email: requestBody.email,
+          age: requestBody.age,
+        });
+        // 登録したデータを削除
+        await AppDataSource.getRepository(User).delete({
+          id: response.body.data.id,
+        });
+      });
+
+      test("🆖 passwordが未定義の場合、400エラーが返ってくること", async () => {
         const newUser = {
           name: "testuser",
           email: "test@example.com",
@@ -167,7 +282,7 @@ describe("ユーザー登録API テスト", () => {
         );
       });
 
-      test("passwordが空文字の場合、エラーが返されること", async () => {
+      test("🆖 passwordが空文字の場合、400エラーが返ってくること", async () => {
         const newUser = {
           name: "testuser",
           email: "test@example.com",
@@ -183,7 +298,7 @@ describe("ユーザー登録API テスト", () => {
         );
       });
 
-      test("passwordが7文字以下の場合、エラーが返されること", async () => {
+      test("🆖 passwordが7文字以下の場合、400エラーが返ってくること", async () => {
         const newUser = {
           name: "testuser",
           email: "test@example.com",
@@ -199,7 +314,7 @@ describe("ユーザー登録API テスト", () => {
         );
       });
 
-      test("passwordが256文字以上の場合、エラーが返されること", async () => {
+      test("🆖 passwordが256文字以上の場合、400エラーが返ってくること", async () => {
         const newUser = {
           name: "testuser",
           email: "test@example.com",
@@ -215,7 +330,7 @@ describe("ユーザー登録API テスト", () => {
         );
       });
 
-      test("passwordが数字のみの場合、エラーが返されること", async () => {
+      test("🆖 passwordが数字のみの場合、400エラーが返ってくること", async () => {
         const newUser = {
           name: "testuser",
           email: "test@example.com",
@@ -231,7 +346,7 @@ describe("ユーザー登録API テスト", () => {
         );
       });
 
-      test("passwordが英字のみの場合、エラーが返されること", async () => {
+      test("🆖 passwordが英字のみの場合、400エラーが返ってくること", async () => {
         const newUser = {
           name: "testuser",
           email: "test@example.com",
@@ -247,7 +362,7 @@ describe("ユーザー登録API テスト", () => {
         );
       });
 
-      test("passwordに記号が含まれる場合、エラーが返されること", async () => {
+      test("🆖 passwordに記号が含まれる場合、400エラーが返ってくること", async () => {
         const newUser = {
           name: "testuser",
           email: "test@example.com",
@@ -264,8 +379,51 @@ describe("ユーザー登録API テスト", () => {
       });
     });
 
-    describe("age", () => {
-      test("ageが未定義の場合、エラーが返されること", async () => {
+    describe("年齢（age）", () => {
+      test("👍 ageが0の場合、200が返ってくること", async () => {
+        const requestBody = {
+          name: "testuser",
+          email: "test6@example.com",
+          password: "password123",
+          age: 0,
+        };
+
+        const response = await request(app).post("/user").send(requestBody);
+
+        expect(response.status).toStrictEqual(200);
+        expect(response.body.data).toMatchObject({
+          name: requestBody.name,
+          email: requestBody.email,
+          age: requestBody.age,
+        });
+        // 登録したデータを削除
+        await AppDataSource.getRepository(User).delete({
+          id: response.body.data.id,
+        });
+      });
+
+      test("👍 ageが正の整数の場合、200が返ってくること", async () => {
+        const requestBody = {
+          name: "testuser",
+          email: "test7@example.com",
+          password: "password123",
+          age: 100,
+        };
+
+        const response = await request(app).post("/user").send(requestBody);
+
+        expect(response.status).toStrictEqual(200);
+        expect(response.body.data).toMatchObject({
+          name: requestBody.name,
+          email: requestBody.email,
+          age: requestBody.age,
+        });
+        // 登録したデータを削除
+        await AppDataSource.getRepository(User).delete({
+          id: response.body.data.id,
+        });
+      });
+      test("🆖 ageが未定義の場合、400エラーが返ってくること", async () => {
         const newUser = {
           name: "testuser",
           email: "test@example.com",
@@ -278,7 +436,7 @@ describe("ユーザー登録API テスト", () => {
         expect(response.body.detail).toContain(ValidationMsg.age.unspecified);
       });
 
-      test("ageが負の数の場合、エラーが返されること", async () => {
+      test("🆖 ageが負の数の場合、400エラーが返ってくること", async () => {
         const newUser = {
           name: "testuser",
           email: "test@example.com",
@@ -292,7 +450,7 @@ describe("ユーザー登録API テスト", () => {
         expect(response.body.detail).toContain(ValidationMsg.age.invalidFormat);
       });
 
-      test("ageが数値でない場合、エラーが返されること", async () => {
+      test("🆖 ageが数値でない場合、400エラーが返ってくること", async () => {
         const newUser = {
           name: "testuser",
           email: "test@example.com",
@@ -307,159 +465,35 @@ describe("ユーザー登録API テスト", () => {
       });
     });
   });
+  describe("インテグレーションテスト", () => {
+    describe("バリデーションに引っかからないパラメータでAPI実行後", () => {
+      test("200が返り、DBに渡したパラメータ通りのユーザー情報が登録されていること", async () => {
+        const requestBody = {
+          name: "Numasaka Susuru",
+          email: "tintinkaikai@example.com",
+          password: "supernova1923",
+          age: 25,
+        };
 
-  describe("正常系テスト", () => {
-    test("1文字のユーザー名で登録できること", async () => {
-      const requestBody = {
-        name: "a",
-        email: "test1@example.com",
-        password: "password123",
-        age: 20,
-      };
+        const response = await request(app).post("/user").send(requestBody);
+        createdUserIds.push(response.body.data.id);
 
-      const response = await request(app).post("/user").send(requestBody);
+        expect(response.status).toStrictEqual(200);
+        expect(response.body.data).toMatchObject({
+          name: requestBody.name,
+          email: requestBody.email,
+          age: requestBody.age,
+        });
 
-      expect(response.status).toStrictEqual(200);
-      expect(response.body.data).toMatchObject({
-        name: requestBody.name,
-        email: requestBody.email,
-        age: requestBody.age,
-      });
-      // 登録したデータを削除
-      await AppDataSource.getRepository(User).delete({
-        id: response.body.data.id,
-      });
-    });
-
-    test("20文字のユーザー名で登録できること", async () => {
-      const requestBody = {
-        name: "a".repeat(20),
-        email: "test2@example.com",
-        password: "password123",
-        age: 20,
-      };
-
-      const response = await request(app).post("/user").send(requestBody);
-
-      expect(response.status).toStrictEqual(200);
-      expect(response.body.data).toMatchObject({
-        name: requestBody.name,
-        email: requestBody.email,
-        age: requestBody.age,
-      });
-      // 登録したデータを削除
-      await AppDataSource.getRepository(User).delete({
-        id: response.body.data.id,
-      });
-    });
-
-    test("RFCに準拠した一般的な形式のメールアドレスで登録できること", async () => {
-      const requestBody = {
-        name: "testuser",
-        email: "test3@example.com",
-        password: "password123",
-        age: 20,
-      };
-
-      const response = await request(app).post("/user").send(requestBody);
-
-      expect(response.status).toStrictEqual(200);
-      expect(response.body.data).toMatchObject({
-        name: requestBody.name,
-        email: requestBody.email,
-        age: requestBody.age,
-      });
-      // 登録したデータを削除
-      await AppDataSource.getRepository(User).delete({
-        id: response.body.data.id,
-      });
-    });
-
-    test("8文字の英数字混合パスワードで登録できること", async () => {
-      const requestBody = {
-        name: "testuser",
-        email: "test4@example.com",
-        password: "aB123456",
-        age: 20,
-      };
-
-      const response = await request(app).post("/user").send(requestBody);
-
-      expect(response.status).toStrictEqual(200);
-      expect(response.body.data).toMatchObject({
-        name: requestBody.name,
-        email: requestBody.email,
-        age: requestBody.age,
-      });
-      // 登録したデータを削除
-      await AppDataSource.getRepository(User).delete({
-        id: response.body.data.id,
-      });
-    });
-
-    test("255文字の英数字混合パスワードで登録できること", async () => {
-      const requestBody = {
-        name: "testuser",
-        email: "test5@example.com",
-        password: "a".repeat(254) + "1",
-        age: 20,
-      };
-
-      const response = await request(app).post("/user").send(requestBody);
-
-      expect(response.status).toStrictEqual(200);
-      expect(response.body.data).toMatchObject({
-        name: requestBody.name,
-        email: requestBody.email,
-        age: requestBody.age,
-      });
-      // 登録したデータを削除
-      await AppDataSource.getRepository(User).delete({
-        id: response.body.data.id,
-      });
-    });
-
-    test("age が 0 で登録できること", async () => {
-      const requestBody = {
-        name: "testuser",
-        email: "test6@example.com",
-        password: "password123",
-        age: 0,
-      };
-
-      const response = await request(app).post("/user").send(requestBody);
-
-      expect(response.status).toStrictEqual(200);
-      expect(response.body.data).toMatchObject({
-        name: requestBody.name,
-        email: requestBody.email,
-        age: requestBody.age,
-      });
-      // 登録したデータを削除
-      await AppDataSource.getRepository(User).delete({
-        id: response.body.data.id,
-      });
-    });
-
-    test("age が正の整数で登録できること", async () => {
-      const requestBody = {
-        name: "testuser",
-        email: "test7@example.com",
-        password: "password123",
-        age: 100,
-      };
-
-      const response = await request(app).post("/user").send(requestBody);
-
-      expect(response.status).toStrictEqual(200);
-      expect(response.body.data).toMatchObject({
-        name: requestBody.name,
-        email: requestBody.email,
-        age: requestBody.age,
-      });
-      // 登録したデータを削除
-      await AppDataSource.getRepository(User).delete({
-        id: response.body.data.id,
+        // データがDBに登録されていることを確認
+        const createdUser = await AppDataSource.getRepository(User).findOneBy({
+          id: response.body.data.id,
+        });
+        expect(createdUser).toMatchObject({
+          name: requestBody.name,
+          email: requestBody.email,
+          age: requestBody.age,
+        });
       });
     });
   });
