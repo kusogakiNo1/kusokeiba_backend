@@ -5,7 +5,7 @@ services:
   #   # 生成するコンテナ名
   #   container_name: kusokeiba-backend
   #   # dockerイメージビルド時の処理
-  #   build: 
+  #   build:
   #     context: .
   #     dockerfile: ./docker/java/Dockerfile
   #   hostname: localhost
@@ -19,7 +19,7 @@ services:
   #   # 環境変数の設定
   #   environment:
   #     TZ: Asia/Tokyo
-  #   # 接続するネットワーク 
+  #   # 接続するネットワーク
   #   networks:
   #     - kusokeibaNetwork
 
@@ -41,19 +41,16 @@ services:
     image: mysql:8.0
     # 生成するコンテナ名
     container_name: kusokeiba-db
-    # build: 
-    #   context: .
-    #   dockerfile: ./docker/mysql/Dockerfile
     hostname: localhost
     ports:
       - "2206:22"
-      - '3306:3306'
+      - "3306:3306"
     environment:
       MYSQL_DATABASE: kusokeiba
       MYSQL_ROOT_PASSWORD: root
       MYSQL_USER: user
       MYSQL_PASSWORD: kuso950
-      TZ: 'Asia/Tokyo'
+      TZ: "Asia/Tokyo"
     volumes:
       - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
       - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -62,8 +59,30 @@ services:
     networks:
       - kusokeibaNetwork
 
+  # vitestテスト時接続用DBコンテナ
+  kusokeiba-db-test:
+    # 生成するイメージ名
+    image: mysql:8.0
+    # 生成するコンテナ名
+    container_name: kusokeiba-db-test
+    hostname: localhost
+    ports:
+      - "2207:22"
+      - "3307:3306"
+    environment:
+      MYSQL_DATABASE: kusokeiba-test
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: user
+      MYSQL_PASSWORD: kuso950
+      TZ: "Asia/Tokyo"
+    volumes:
+      - ./docker/mysql-test/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./docker/mysql-test/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docker/mysql-test/data:/var/lib/mysql
+    privileged: true
+    networks:
+      - kusokeibaNetwork
+
 networks:
   kusokeibaNetwork:
     driver: bridge
-#     ipam:
-#       driver: default

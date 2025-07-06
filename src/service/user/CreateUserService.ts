@@ -16,7 +16,6 @@ export class CreateUserService {
   private userRepository = AppDataSource.getRepository(User);
 
   async validate(userData: CreateUserRequest): Promise<any> {
-    console.log(userData);
     const validation = plainToInstance(CreateUserValidation, userData);
     return validate(validation);
   }
